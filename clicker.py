@@ -1,6 +1,8 @@
 import asyncio
 import random
+import getpass
 from pyppeteer import launch
+
 
 class Clicker(object):
     def __init__(self):
@@ -8,7 +10,7 @@ class Clicker(object):
         self.password = None
         self.browser = None
         self.mainPage = None
-        self.LOGIN_PAGE = 'https://www.amazon.com/ap/signin?_encoding=UTF8&ignoreAuthState=1&openid.assoc_handle=usflex&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.mode=checkid_setup&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&openid.ns.pape=http%3A%2F%2Fspecs.openid.net%2Fextensions%2Fpape%2F1.0&openid.pape.max_auth_age=0&openid.return_to=https%3A%2F%2Fwww.amazon.com%2Fgp%2Fgiveaway%2Fhome%2Fref%3Dnav_custrec_signin&switch_account='
+        self.LOGIN_PAGE = 'https://www.amazon.com/ap/signin?_encoding=UTF8&ignoreAuthState=1&openid.assoc_handle=usflex&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.mode=checkid_setup&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&openid.ns.pape=http%3A%2F%2Fspecs.openid.net%2Fextensions%2Fpape%2F1.0&openid.pape.max_auth_age=0&openid.return_to=https%3A%2F%2Fwww.amazon.com%2F%3Fref_%3Dnav_signin&switch_account='
 
     async def checkRelogin(self, page):
         check = await page.querySelector('.cvf-account-switcher')
@@ -18,13 +20,15 @@ class Clicker(object):
             await continueButton.click()
             await asyncio.sleep(2)
 
-
     async def createBrowser(self):
         self.browser = await launch(headless=False)
 
     async def closeBrowser(self):
         await self.browser.close()
 
+    async def get_credentials(self):
+        self.email = input('Enter your e-mail: ')
+        self.password = getpass.getpass('Enter your password: ')
 
     async def login(self):
         self.mainPage = await self.browser.newPage()
@@ -36,11 +40,10 @@ class Clicker(object):
         await self.mainPage.click('#signInSubmit')
         await asyncio.sleep(2)
 
-
     async def processPage(self, URL):
         print('Page:' + URL)
         await self.mainPage.goto(URL)
-        await asyncio.sleep(random.randrange(1,4))
+        await asyncio.sleep(random.randrange(1, 4))
         await self.checkRelogin(self.mainPage)
         table = await self.mainPage.querySelector('#giveaway-grid')
         if table:
@@ -59,7 +62,6 @@ class Clicker(object):
             )
             return nextPageURL
 
-
     async def processItem(self, item):
         itemType = await item.querySelector('.giveawayParticipationInfoContainer')
         if itemType:
@@ -73,11 +75,11 @@ class Clicker(object):
             '(item) => item.href',
             item
         )
-        #print('Item:' + itemURL)
+        # print('Item:' + itemURL)
         itemPage = await self.browser.newPage()
         await itemPage.setViewport({'width': 1900, 'height': 1000})
         await itemPage.goto(itemURL)
-        await asyncio.sleep(random.randrange(2,4))
+        await asyncio.sleep(random.randrange(2, 4))
         await self.checkRelogin(itemPage)
         itemReady = await itemPage.querySelector('.qa-enter-chance-label')
         if itemReady:
@@ -92,7 +94,7 @@ class Clicker(object):
             elif itemTimeY:
                 await asyncio.sleep(10)
                 await itemPage.waitForSelector('#enter-youtube-video-button:not(.a-button-disabled)')
-                await asyncio.sleep(random.randrange(1,4))
+                await asyncio.sleep(random.randrange(1, 4))
                 continueButton = await itemPage.querySelector('#enter-youtube-video-button-announce')
                 await continueButton.click()
             elif itemTimeA:
@@ -106,7 +108,7 @@ class Clicker(object):
                 await itemPage.close()
                 return False
 
-            await asyncio.sleep(random.randrange(3,4))
+            await asyncio.sleep(random.randrange(3, 4))
             result = await itemPage.querySelector('.qa-giveaway-result-text')
             resultText = await itemPage.evaluate(
                 '(result) => result.textContent',
@@ -121,4 +123,3 @@ class Clicker(object):
                 await asyncio.sleep(60)
 
         await itemPage.close()
-
